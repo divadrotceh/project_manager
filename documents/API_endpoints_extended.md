@@ -6,47 +6,54 @@ config:
 ```mermaid
 flowchart TB
   subgraph fig1["Figure 1 - Document and Access Flows"]
-    a1(("Delete Project")) --> a2["Auth Layer"]
-    a2 --> a3["Auth Service"]
-    a3 --> a4["Project Service"]
-    a4 --> a5["S3 Controller"] & a6["key/value Controller"] & a7["PostgreSQL Controller"] & a8["Confirmation + Home Page"]
-    a9(("Get Documents")) --> a10["Auth Layer"]
-    a10 --> a11["Auth Service"]
-    a11 --> a12["Project Service"]
-    a12 --> a13["key/value Controller"]
-    a13 --> a14["List"]
-    a15(("Upload Document")) --> a16["Auth Layer"]
-    a16 --> a17["Auth Service"]
-    a17 --> a18["Document Service"]
-    a18 --> a19["S3 Controller"] & a20["key/value Controller"] & a25["Confirmation + Home Page"]
-    a21(("Download Document")) --> a22["Auth Layer"]
-    a22 --> a23["Auth Service"]
-    a23 --> a24["Document Service"]
-    a24 --> a26["S3 Controller"]
-    a26 --> a27["File"]
-    a28(("Update Document")) --> a29["Auth Layer"]
-    a29 --> a30["Auth Service"]
-    a30 --> a31["Document Service"]
-    a31 --> a32["S3 Controller"]
-    a32 --> a33["Confirmation + Home Page"]
-    a34(("Delete Document")) --> a35["Auth Layer"]
-    a35 --> a36["Auth Service"]
-    a36 --> a37["Document Service"]
-    a37 --> a38["S3 Controller"] & a40["key/value Controller"] & a41["Confirmation + Home Page"]
-    a42(("Grant Access")) --> a43["Auth Layer"]
-    a43 --> a44["Auth Service"]
-    a44 --> a45["Project Service"]
-    a46["PostgreSQL Controller"]
+    a1(("Delete Project")) --> a2["API Gateway"]
+    a2 <--> a3["Auth Layer"]
+    a2 --> a48["Confirmation + Home Page"]
+    a3 <--> a4["Project Service"]
+    a4 <--> a47["postgreSQL Controller"] & a5["S3 Controller"] & a6["key/value Controller"] & a7["PostgreSQL Controller"]
+    a9(("Get Documents")) --> a10["API Gateway"]
+    a10 <--> a11["Auth Layer"]
+    a11 <--> a12["Project Service"]
+    a12 <--> a13["key/value Controller"]
+    a13 <--> a49["key/value DB"]
+    a10 --> a14["List"]
+    a15(("Upload Document")) --> a16["API Gateway"]
+    a16 <--> a17["Auth Layer"]
+    a16 --> a25["Confirmation + Home Page"]
+    a17 <--> a18["Document Service"]
+    a18 <--> a19["S3 Controller"] & a20["key/value Controller"]
+    a21(("Download Document")) --> a22["API Gateway"]
+    a22 <--> a23["Auth Layer"]
+    a22 --> a50["file"]
+    a23 <--> a24["Document Service"]
+    a24 <--> a26["S3 Controller"]
+    a26 <--> a27["S3 DB"]
+    a28(("Update Document")) --> a29["API Gateway"]
+    a29 <--> a30["Auth Layer"]
+    a30 <--> a31["Document Service"]
+    a31 <--> a32["S3 Controller"]
+    a32 <--> a51[S3 DB]
+    a29 --> a33["Confirmation + Home Page"]
+    a34(("Delete Document")) --> a35["API Gateway"]
+    a35 <--> a36["Auth Layer"]
+    a35 --> a41["Confirmation + Home Page"]
+    a36 <--> a37["Document Service"]
+    a37 <--> a38["S3 Controller"] & a40["key/value Controller"]
+    a42(("Grant Access")) --> a43["API Gateway"]
+    a43 <--> a44["Auth Layer"]
+    a44 <--> a45["Project Service"]
+    a45 <--> a46["PostgreSQL Controller"]
+    a43 --> a52["Confirmation + Home Page"]
   end
 
   subgraph fig2["Figure 2 - User and Project Flows"]
-    b4(("Create User")) --> b9["API Gateway/Auth Layer"]
-    b9 <--> b1["Auth Service"]
+    b4(("Create User")) --> b9["API Gateway"]
+    b9 <--> b1["Auth Layer"]
     b9 --> b10["Token + Home Page"]
     b1 <--> b2["PostgreSQL Controller"]
     b2 <--> b3["PostgreSQL DB"]
-    b5(("Login")) --> b8["API Gateway/Auth Layer"]
-    b8 <--> b6["Auth Service"]
+    b5(("Login")) --> b8["API Gateway"]
+    b8 <--> b6["Auth Layer"]
     b8 --> b11["Token + Home Page"]
     b6 <--> b7["PostgreSQL Controller"]
     b7 <--> b42["PostgreSQL DB"]
@@ -56,22 +63,22 @@ flowchart TB
     b14 <--> b15["S3 Controller"]
     b15 <--> b16["Key/Value controller"]
     b16 <--> b17["PostgreSQL Controller"]
-    b19(("Get Projects")) --> b20["API Gateway/Auth Layer"]
-    b20 <--> b21["Auth Service"]
+    b19(("Get Projects")) --> b20["API Gateway"]
+    b20 <--> b21["Auth Layer"]
     b20 --> b43[Projects List]
     b21 <--> b22["Project Service"]
     b22 <--> b23["PostgreSQL Controller"] & b24["Key/Value controller"]
     b23 <--> b25["PostgreSQL DB"]
     b24 <--> b26["Key/Value DB"]
-    b27(("Project Details")) --> b28["API Gateway/Auth Layer"]
-    b28 <--> b29["Auth Service"]
+    b27(("Project Details")) --> b28["API Gateway"]
+    b28 <--> b29["Auth Layer"]
     b28 --> b44[Projects Details]
     b29 <--> b30["Project Service"]
     b30 <--> b31["PostgreSQL Controller"] & b32["Key/Value controller"]
     b31 <--> b33["PostgreSQL DB"]
     b32 <--> b34["Key/Value DB"]
-    b35(("Update project")) --> b36["API Gateway/Auth Layer"]
-    b36 <--> b37["Auth Service"]
+    b35(("Update project")) --> b36["API Gateway"]
+    b36 <--> b37["Auth Layer"]
     b36 --> b45["Confirmation + Home Page"]
     b37 <--> b38["Project Service"] 
     b38 <--> b39["PostgreSQL Controller"]
@@ -84,7 +91,6 @@ flowchart TB
   a5@{ shape: proc}
   a6@{ shape: proc}
   a7@{ shape: proc}
-  a8@{ shape: terminal}
   a10@{ shape: proc}
   a11@{ shape: proc}
   a12@{ shape: proc}
@@ -100,7 +106,7 @@ flowchart TB
   a23@{ shape: proc}
   a24@{ shape: proc}
   a26@{ shape: proc}
-  a27@{ shape: terminal}
+  a27@{ shape: db}
   a29@{ shape: proc}
   a30@{ shape: proc}
   a31@{ shape: proc}
@@ -116,6 +122,10 @@ flowchart TB
   a44@{ shape: proc}
   a45@{ shape: proc}
   a46@{ shape: proc}
+  a48@{ shape: terminal}
+  a49@{ shape: db}
+  a50@{ shape: terminal}
+  a51@{ shape: db}
 
   b1@{ shape: proc}
   b2@{ shape: proc}
