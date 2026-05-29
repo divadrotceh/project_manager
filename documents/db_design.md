@@ -49,3 +49,26 @@
     Data type
     Comments
 
+## DBMS Conventions
+DBMS Type: Relational Database
+Particular DBMS: PostgreSQL
+minimal DBMS version: 18.4
+DBMS Infrastructure details: self-hosted
+
+## Naming Conventions
+1. Structures naming
+	a. All table and field names must be lowercase only.
+	b. Word separator in table and field names must be “_” only.
+	c. Nouns in table names must be in singular form only (e.g., “file”, NOT “files”). Nouns in field names   may be un plural form (still its not recommended).
+	d. Field names must have prefixes composed with beginning table name letters.
+	e. All unique constraint names must have “UNQ_” prefix, and must contain all corresponding fields names.
+	f. All trigger names must have “TRG_”, and must contain the table name and triggering event name.
+2. SQL code formatting:
+	a. All SQL keywords must be in uppercase.
+	b. All structure names must be enclosed in “`” symbols.
+3. Comment Principles
+    a. All database structures mut have a comment.
+4. Other specifics (like API, and so on):
+	a. All datetime fields must be of INTEGER type and store UNIXTIME-values.
+	b. All date fields must be of DATE type.
+	c. All primary keys must be surrogate, auto-increment, unsigned
