@@ -72,3 +72,5 @@ DBMS Infrastructure details: self-hosted
 	a. All datetime fields must be of INTEGER type and store UNIXTIME-values.
 	b. All date fields must be of DATE type.
 	c. All primary keys must be surrogate, auto-increment, unsigned
+
+## Table Description
