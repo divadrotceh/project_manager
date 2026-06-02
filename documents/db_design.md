@@ -74,3 +74,23 @@ DBMS Infrastructure details: self-hosted
 	c. All primary keys must be surrogate, auto-increment, unsigned
 
 ## Table Description
+```mermaid
+erDiagram
+project ||--|{ access : has
+project {
+    bigint p_id PK "id, not null, unique"
+    text p_name "not null, unique"
+    text p_description
+}
+user ||--|{ access : has
+user {
+    bigint u_id PK "id, not null, unique"
+    text u_name "not null, unique"
+    text u_pwd  "not null"
+}
+access {
+    bigint p_id PK "foreign key, not null"
+    bigint u_id PK "foreign key, not null"
+    text role "not null"
+}
+```
