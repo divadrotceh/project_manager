@@ -26,3 +26,4 @@ __pycache__/
 *.pytest_cache/
 .env
 /documents/project_manager_architecture.pages
+/documents/api_endpoints.png
