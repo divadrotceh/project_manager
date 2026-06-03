@@ -13,18 +13,20 @@
 
 ### Entity/Attributes
 #### User
-* Username -> username (NOT NUL, UNIQUE)
-* Password -> password (NOT NULL)
-* User ID: <PK> -> user_id (auto, UNIQUE, NOT NULL)
+* Username -> u_ser_name (NOT NUL, UNIQUE)
+* Password -> u_pwd (NOT NULL)
+* User ID: <PK> -> u_id (auto, UNIQUE, NOT NULL)
 
 #### Project
-* Project Name -> project_name (UNIQUE, NOT NULL)
-* Project Description -> project_description
-* Project ID <PK> -> project_id (UNIQUE, auto, NOT NULL)
+* Project Name -> p_name (UNIQUE, NOT NULL)
+* Project Description -> p_description
+* Project ID <PK> -> p_id (UNIQUE, auto, NOT NULL)
 
-#### Document (S3)
-* Project ID
-* Object
+#### Document
+* Document ID -> d_id (UNIQUE, NOT NULL)
+* Project ID -> p_id (fK)
+* S3 Key -> d_s3key
+* mime type -> d_mime
 
 #### Project Access / Membership (Association relation - User & Project)
 * Project ID -> project_id (<PfK>)
@@ -92,5 +94,12 @@ access {
     bigint p_id PK "foreign key, not null"
     bigint u_id PK "foreign key, not null"
     text role "not null"
+}
+document }|--|| project : has
+document {
+    bigint d_id PK "not null, unique"
+    bigint p_id PK "foreign key, not null"
+    text d_s3key "not null"
+    text d_mime "not null"
 }
 ```
