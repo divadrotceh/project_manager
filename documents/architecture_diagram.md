@@ -11,14 +11,13 @@ flowchart TB
         n8["Document Service"]
   end
  subgraph s2["Data Access Layer"]
-        n11["key/value Controller"]
         n12["S3 Controller"]
         n13["PostgreSQL Controller"]
   end
     n1(["User"]) --> n2["API Gateway Layer"]
     n2 --> n3["Auth Layer"]
     s1 --> s2
-    s2 --> n6["key-value Storage"] & n7["S3 Storage"] & n5["PostgreSQL"]
+    s2 --> n7["S3 Storage"] & n5["PostgreSQL"]
     n3 --> s1
 
     n4@{ shape: proc}
