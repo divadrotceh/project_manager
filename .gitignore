@@ -27,3 +27,4 @@ __pycache__/
 .env
 /documents/project_manager_architecture.pages
 /documents/api_endpoints.png
+.DS_Store
