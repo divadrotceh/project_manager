@@ -12,26 +12,33 @@
 * Project Access / Membership (Association relation)
 
 ### Entity/Attributes
-#### User
-* Username -> u_ser_name (NOT NUL, UNIQUE)
-* Password -> u_pwd (NOT NULL)
-* User ID: <PK> -> u_id (auto, UNIQUE, NOT NULL)
+#### app_user
+* Username -> `u_name` (NOT NUL, UNIQUE)
+* Password -> `u_pwd` (NOT NULL, password hash)
+* User ID: <PK> -> `u_id` (auto, UNIQUE, NOT NULL)
+* `u_created_at`, `u_updated_at` (UNIXTIME BIGINT)
 
-#### Project
-* Project Name -> p_name (UNIQUE, NOT NULL)
-* Project Description -> p_description
-* Project ID <PK> -> p_id (UNIQUE, auto, NOT NULL)
+#### project
+* Project Name -> `p_name` (UNIQUE, NOT NULL)
+* Project Description -> `p_description`
+* Project ID <PK> -> `p_id` (UNIQUE, auto, NOT NULL)
+* `p_created_at`, `p_updated_at` (UNIXTIME BIGINT)
 
-#### Document
-* Document ID -> d_id (UNIQUE, NOT NULL)
-* Project ID -> p_id (fK)
-* S3 Key -> d_s3key
-* mime type -> d_mime
+#### project_document
+* Document ID <PK> -> `d_id` (UNIQUE, NOT NULL)
+* Project ID -> `p_id` (fK)
+* Title -> `d_title`
+* S3 Key -> `d_s3key`
+* mime type -> `d_mime`
+* `d_uploaded_by_u_id`, `d_created_at`, `d_updated_at`
 
-#### Project Access / Membership (Association relation - User & Project)
-* Project ID -> project_id (<PfK>)
-* User ID -> user_id (<PfK>)
-* Role -> role (USER | ADMINISTRATOR)
+#### project_access (Association relation - User & Project)
+* Project ID -> `p_id` (<PfK>)
+* User ID -> `u_id` (<PfK>)
+* Role -> `pa_role` (USER | ADMINISTRATOR)
+* `granted_by_u_id`, 
+* `pa_created_at`, `pa_updated_at` (UNIXTIME BIGINT)
+* composite PK (`p_id`, `u_id`)
 
 ## Data-logical design
 ### Defining
@@ -78,65 +85,46 @@ DBMS Infrastructure details: self-hosted
 ## Table Description
 ```mermaid
 erDiagram
-project ||--|{ access : has
+project ||--|{ project_access : has
 project {
     bigint p_id PK "id, not null, unique"
     text p_name "not null, unique"
     text p_description
+    bigint p_created_at "UNIXTIME"
+    bigint p_updated_at "UNIXTIME"
 }
-user ||--|{ access : has
-user {
+app_user ||--|{ project_access : has
+app_user {
     bigint u_id PK "id, not null, unique"
     text u_name "not null, unique"
     text u_pwd  "not null"
+    bigint u_created_at "UNIXTIME"
+    bigint u_updated_at "UNIXTIME"
 }
-access {
+project_access {
     bigint p_id PK "foreign key, not null"
     bigint u_id PK "foreign key, not null"
-    text role "not null"
+    text pa_role "(USER | ADMINISTRATOR)"
+    bigint pa_granted_by_u_id "foreign key, not null"
+    bigint pa_created_at "UNIXTIME"
+    bigint pa_updated_at "UNIXTIME"
 }
-document }|--|| project : has
-document {
+project_document }|--|| project : has
+project_document {
     bigint d_id PK "not null, unique"
     bigint p_id PK "foreign key, not null"
+    text d_title "not null"
     text d_s3key "not null"
     text d_mime "not null"
+    bigint d_uploaded_by_u_id "foreign key, not null"
+    bigint d_updated_at "UNIXTIME"
+    bigint d_created_at "UNIXTIME"
 }
 ```
 
-## Permissions applied at database layer
-Admin or users of the project specific.
+## Implemented Database Extensions
 
-| Permissions                                   | User | Admin |
-| Create/Delete Projects                        | No   | Yes |
-| Add/Update Project Information and Details    | Yes  | Yes | 
-| Add/Update/Remove Project Documents           | Yes  | Yes | 
-| Share Project with Other Users                | No   | Yes |
-
-## Implemented Database Extensions (postgres_db_setup.py)
-
-### 1. Additional Structures Implemented
-The database setup script adds the following structures to support security, consistency, and performance:
-
-* `app_user` table (used instead of reserved keyword `user`)
-    * `u_id` (identity PK)
-    * `u_name` (unique username)
-    * `u_pwd` (password hash)
-    * `u_created_at`, `u_updated_at` (UNIXTIME BIGINT)
-* `project` table
-    * `p_created_at`, `p_updated_at` (UNIXTIME BIGINT)
-* `project_access` table (membership and project role)
-    * composite PK (`p_id`, `u_id`)
-    * `pa_role` (`user` | `administrator`)
-    * `granted_by_u_id`, `pa_created_at`, `pa_updated_at`
-* `project_document` table
-    * `d_id` identity PK
-    * `p_id` FK to project
-    * `d_title`
-    * `d_s3key` (unique), `d_mime`
-    * `d_uploaded_by_u_id`, `d_created_at`, `d_updated_at`
-
-### 2. Cascade Operations and Referential Actions
+### 1. Cascade Operations and Referential Actions
 To keep consistency automatically:
 
 * Deleting a project cascades to `project_access` and `project_document`.
@@ -144,7 +132,7 @@ To keep consistency automatically:
 * If uploader/granter users are deleted, references are set to NULL (`ON DELETE SET NULL`) instead of deleting records.
 * There is currently no owner FK column in `project`; ownership is represented by initial `project_access` administrator assignment.
 
-### 3. Advanced Indexing for Performance
+### 2. Advanced Indexing for Performance
 The setup script includes indexes optimized for the expected API queries:
 
 * `idx_project_access_u_id_p_id` for membership lookup by user/project.
@@ -153,7 +141,7 @@ The setup script includes indexes optimized for the expected API queries:
 * `idx_project_document_u_id` on `project_document(u_id)`.
 * `idx_username_trgm` (GIN + `pg_trgm`) for username search.
 
-### 4. Trigger-Based Data Integrity
+### 3. Trigger-Based Data Integrity
 Implemented triggers:   
 
 * Auto-update `*_updated_at` timestamps on UPDATE for all main tables.
@@ -161,7 +149,7 @@ Implemented triggers:
 
 This enforces the rule that each project must always keep at least one administrator.
 
-### 5. Stored Procedures / Functions Implemented
+### 4. Stored Procedures / Functions Implemented
 Controller use cases are mapped to DB-side procedures with permission checks:
 
 * `sp_create_project(p_requester_u_id, p_name, p_description)`
@@ -179,7 +167,7 @@ Additional document management helpers included in the implementation:
 * `sp_upsert_document(p_requester_u_id, p_p_id, p_d_id, p_d_s3key, p_d_title, p_d_mime)`
 * `sp_remove_document(p_requester_u_id, p_p_id, p_d_id)`
 
-### 6. Authorization Model Enforced in SQL
+### 5. Authorization Model Enforced in SQL
 Permission checks are centralized in helper functions:
 
 * `fn_require_project_member(...)`
@@ -198,7 +186,7 @@ Current SQL-side self-check behavior:
 
 * `sp_get_projects_by_u_id` allows only self-query (`p_requester_u_id = p_target_u_id`).
 
-### 7. Password Security
+### 6. Password Security
 Passwords are not stored in plain text:
 
 * `sp_create_user` stores passwords with bcrypt hash using `pgcrypto` (`crypt` + `gen_salt('bf')`).
