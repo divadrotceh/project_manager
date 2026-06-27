@@ -519,9 +519,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Initialize PostgreSQL schema for Project Manager App")
     parser.add_argument(
         "--database-url",
-        #postgresql://user:password@localhost:5432/dbname
         default=f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{DB_HOST}:{DB_PORT}/{POSTGRES_DB}",
-        #default="postgresql://postgres:postgres@localhost:5431/app_db",
         help="PostgreSQL URL. Defaults to env var DATABASE_URL.",
     )
     parser.add_argument(

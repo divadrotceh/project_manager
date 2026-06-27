@@ -18,12 +18,22 @@ import pytest
 import psycopg
 from datetime import datetime
 from contextlib import contextmanager
+from dotenv import load_dotenv
 
+load_dotenv()
+
+POSTGRES_USER = os.getenv("POSTGRES_USER")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+POSTGRES_DB = os.getenv("POSTGRES_DB")
+DB_HOST = os.getenv("DB_HOST")
+DB_PORT = os.getenv("DB_PORT")
+
+DATABASE_URL = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{DB_HOST}:{DB_PORT}/{POSTGRES_DB}"
 
 @pytest.fixture(scope="session")
 def database_url():
     """Get database URL from environment or use default test DB."""
-    url = os.getenv("DATABASE_URL")
+    url = DATABASE_URL
     if not url:
         pytest.skip("DATABASE_URL environment variable not set")
     return url
