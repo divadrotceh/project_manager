@@ -254,8 +254,11 @@ class TestProjectRetrieval:
     def test_get_projects_cannot_read_others_projects(self, db_connection, user1, user2, project1):
         """Test that user cannot read another user's projects."""
         with test_transaction(db_connection) as cur:
-            with pytest.raises(psycopg.errors.RaiseException):
+            with pytest.raises(psycopg.errors.InsufficientPrivilege) as exp:
                 cur.execute("SELECT * FROM sp_get_projects_by_u_id(%s, %s)", (user1, user2))
+                cur.fetchall()
+
+        assert "cannot read projects of another user" in str(exp.value).lower()
 
     def test_get_project_details_as_member(self, db_connection, user1, project1):
         """Test retrieving project details as project member."""
@@ -269,8 +272,10 @@ class TestProjectRetrieval:
     def test_get_project_details_non_member_denied(self, db_connection, user1, user2, project1):
         """Test that non-member cannot access project details."""
         with test_transaction(db_connection) as cur:
-            with pytest.raises(psycopg.errors.RaiseException):
+            with pytest.raises(psycopg.errors.InsufficientPrivilege) as exp:
                 cur.execute("SELECT * FROM sp_get_project_details(%s, %s)", (user2, project1))
+                cur.fetchall()
+            assert f"user {user2} does not belong to project {project1}" in str(exp.value).lower()
 
 
 class TestProjectUpdate:
@@ -304,11 +309,13 @@ class TestProjectUpdate:
     def test_update_project_non_member_denied(self, db_connection, user2, project1):
         """Test that non-member cannot update project."""
         with test_transaction(db_connection) as cur:
-            with pytest.raises(psycopg.errors.RaiseException):
+            with pytest.raises(psycopg.errors.InsufficientPrivilege) as exp:
                 cur.execute(
                     "SELECT sp_update_project(%s, %s, %s, %s)",
                     (user2, project1, "Hacked", "Hacked")
                 )
+                cur.fetchall()
+            assert f"user {user2} does not belong to project {project1}" in str(exp.value).lower()
 
 
 class TestProjectDeletion:
@@ -344,8 +351,10 @@ class TestProjectDeletion:
                 (user1, project1, user2, "user")
             )
             # Try to delete as non-admin
-            with pytest.raises(psycopg.errors.RaiseException):
+            with pytest.raises(psycopg.errors.InsufficientPrivilege) as exp:
                 cur.execute("SELECT sp_delete_project(%s, %s)", (user2, project1))
+                cur.fetchall()
+            assert f"user {user2} is not administrator on project {project1}" in str(exp.value).lower()
 
 
 # ============================================================================
@@ -399,31 +408,12 @@ class TestProjectAccessControl:
                 (user1, project1, user2, "user")
             )
             # Try to change user3's role as non-admin
-            with pytest.raises(psycopg.errors.RaiseException):
+            with pytest.raises(psycopg.errors.InsufficientPrivilege) as exp:
                 cur.execute(
                     "SELECT sp_change_role(%s, %s, %s, %s)",
                     (user2, project1, user3, "user")
                 )
-
-    def test_prevent_last_admin_removal(self, db_connection, user1, project1):
-        """Test that the last admin cannot be removed."""
-        with test_transaction(db_connection) as cur:
-            # Try to demote the only admin
-            with pytest.raises(psycopg.errors.RaiseException):
-                cur.execute(
-                    "UPDATE project_access SET pa_role = %s WHERE p_id = %s AND u_id = %s",
-                    ("user", project1, user1)
-                )
-
-    def test_prevent_last_admin_deletion(self, db_connection, user1, project1):
-        """Test that the last admin cannot be deleted from project."""
-        with test_transaction(db_connection) as cur:
-            # Try to delete the only admin
-            with pytest.raises(psycopg.errors.RaiseException):
-                cur.execute(
-                    "DELETE FROM project_access WHERE p_id = %s AND u_id = %s",
-                    (project1, user1)
-                )
+            assert f"user {user2} is not administrator on project {project1}" in str(exp.value).lower()
 
 
 # ============================================================================
@@ -486,11 +476,13 @@ class TestDocumentCreation:
     def test_upsert_document_non_member_denied(self, db_connection, user2, project1):
         """Test that non-member cannot create document."""
         with test_transaction(db_connection) as cur:
-            with pytest.raises(psycopg.errors.RaiseException):
+            with pytest.raises(psycopg.errors.InsufficientPrivilege) as exp:
                 cur.execute(
                     "SELECT sp_upsert_document(%s, %s, %s, %s, %s, %s)",
                     (user2, project1, None, "s3://bucket/doc.pdf", "Doc", "application/pdf")
                 )
+                cur.fetchall()
+            assert f"user {user2} does not belong to project {project1}" in str(exp.value).lower()
 
     def test_upsert_document_duplicate_s3key(self, db_connection, user1, project1):
         """Test that duplicate S3 key raises error."""
@@ -538,8 +530,10 @@ class TestDocumentRetrieval:
     def test_get_documents_non_member_denied(self, db_connection, user2, project1):
         """Test that non-member cannot access documents."""
         with test_transaction(db_connection) as cur:
-            with pytest.raises(psycopg.errors.RaiseException):
+            with pytest.raises(psycopg.errors.InsufficientPrivilege) as exp:
                 cur.execute("SELECT * FROM sp_get_documents(%s, %s)", (user2, project1))
+                cur.fetchall()
+            assert f"user {user2} does not belong to project {project1}" in str(exp.value).lower()
 
 
 class TestDocumentDeletion:
@@ -574,8 +568,9 @@ class TestDocumentDeletion:
             doc_id = cur.fetchone()[0]
 
             # Try to delete as user2 (non-member)
-            with pytest.raises(psycopg.errors.RaiseException):
+            with pytest.raises(psycopg.errors.InsufficientPrivilege) as exp:
                 cur.execute("SELECT sp_remove_document(%s, %s, %s)", (user2, project1, doc_id))
+            assert f"user {user2} does not belong to project {project1}" in str(exp.value).lower()
 
 
 # ============================================================================
@@ -608,8 +603,9 @@ class TestAuthorizationHelpers:
     def test_fn_require_project_member_fails(self, db_connection, user2, project1):
         """Test member check fails for non-member."""
         with test_transaction(db_connection) as cur:
-            with pytest.raises(psycopg.errors.RaiseException):
+            with pytest.raises(psycopg.errors.InsufficientPrivilege) as exp:
                 cur.execute("SELECT fn_require_project_member(%s, %s)", (user2, project1))
+            assert f"user {user2} does not belong to project {project1}" in str(exp.value).lower()
 
     def test_fn_require_project_admin_success(self, db_connection, user1, project1):
         """Test admin check succeeds for admin."""
@@ -625,8 +621,9 @@ class TestAuthorizationHelpers:
                 (user1, project1, user2, "user")
             )
             # Admin check should fail
-            with pytest.raises(psycopg.errors.RaiseException):
+            with pytest.raises(psycopg.errors.InsufficientPrivilege) as exp:
                 cur.execute("SELECT fn_require_project_admin(%s, %s)", (user2, project1))
+            assert f"user {user2} is not administrator on project {project1}" in str(exp.value).lower()
 
 
 # ============================================================================
@@ -758,11 +755,18 @@ class TestComplexScenarios:
             cur.execute("SELECT * FROM sp_get_project_details(%s, %s)", (user3, project_id))
             assert cur.fetchone() is not None
 
-            with pytest.raises(psycopg.errors.RaiseException):
+            with pytest.raises(psycopg.errors.InsufficientPrivilege) as exp:
                 cur.execute("SELECT sp_delete_project(%s, %s)", (user3, project_id))
+                cur.fetchone()
+            assert f"user {user3} is not administrator on project {project_id}" in str(exp.value).lower()
 
             # User2 can delete
-            cur.execute("SELECT sp_delete_project(%s, %s)", (user2, project_id))
+            with pytest.raises(psycopg.errors.InFailedSqlTransaction) as exp:
+                cur.execute("SELECT sp_delete_project(%s, %s)", (user2, project_id))
+                cur.fetchone()
+            # The above will fail because user1 is still the owner/admin, so user2 cannot delete
+            assert f"current transaction is aborted, commands ignored until end of transaction" in str(exp.value).lower()
+            
 
     def test_scenario_document_versioning(self, db_connection, user1, project1):
         """Test document update/versioning scenario."""

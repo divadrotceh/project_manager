@@ -210,46 +210,6 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION fn_prevent_last_admin_removal()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-AS $$
-DECLARE
-    v_admin_count BIGINT;
-BEGIN
-    IF OLD.pa_role <> 'administrator' THEN
-        RETURN COALESCE(NEW, OLD);
-    END IF;
-
-    SELECT COUNT(*)
-      INTO v_admin_count
-      FROM project_access pa
-     WHERE pa.p_id = OLD.p_id
-       AND pa.pa_role = 'administrator'
-       AND pa.u_id <> OLD.u_id;
-
-    IF v_admin_count = 0 THEN
-        RAISE EXCEPTION 'Project % must have at least one administrator', OLD.p_id
-            USING ERRCODE = '23514';
-    END IF;
-
-    RETURN COALESCE(NEW, OLD);
-END;
-$$;
-
-DROP TRIGGER IF EXISTS trg_project_access_bd_prevent_last_admin ON project_access;
-CREATE TRIGGER trg_project_access_bd_prevent_last_admin
-BEFORE DELETE ON project_access
-FOR EACH ROW
-EXECUTE FUNCTION fn_prevent_last_admin_removal();
-
-DROP TRIGGER IF EXISTS trg_project_access_bu_prevent_last_admin ON project_access;
-CREATE TRIGGER trg_project_access_bu_prevent_last_admin
-BEFORE UPDATE OF pa_role ON project_access
-FOR EACH ROW
-WHEN (OLD.pa_role = 'administrator' AND NEW.pa_role <> 'administrator')
-EXECUTE FUNCTION fn_prevent_last_admin_removal();
-
 CREATE OR REPLACE FUNCTION sp_create_user(
     p_requester_u_id BIGINT,
     p_u_name TEXT,
@@ -362,8 +322,8 @@ $$;
 CREATE OR REPLACE FUNCTION sp_update_project(
     p_requester_u_id BIGINT,
     p_p_id BIGINT,
-    p_name TEXT,
-    p_description TEXT
+    p_p_name TEXT,
+    p_p_description TEXT
 )
 RETURNS VOID
 LANGUAGE plpgsql
@@ -372,8 +332,8 @@ BEGIN
     PERFORM fn_require_project_member(p_requester_u_id, p_p_id);
 
     UPDATE project p
-       SET p_name = COALESCE(p_name, p.p_name),
-           p_description = COALESCE(p_description, p.p_description)
+       SET p_name = COALESCE(p_p_name, p.p_name),
+           p_description = COALESCE(p_p_description, p.p_description)
      WHERE p.p_id = p_p_id;
 END;
 $$;

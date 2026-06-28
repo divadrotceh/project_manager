@@ -146,6 +146,7 @@ Implemented triggers:
 
 * Auto-update `*_updated_at` timestamps on UPDATE for all main tables.
 * Guard trigger preventing removal/demotion of the last project administrator.
+removing this, will be added on the app side
 
 This enforces the rule that each project must always keep at least one administrator.
 
