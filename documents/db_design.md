@@ -155,8 +155,8 @@ Controller use cases are mapped to DB-side procedures with permission checks:
 
 * `sp_create_project(p_requester_u_id, p_name, p_description)`
 * `sp_get_projects_by_u_id(p_requester_u_id, p_target_u_id)`
-* `sp_create_user(p_requester_u_id, p_u_ser_name, p_plain_pwd)`
-* `sp_check_u_pwd(p_u_id, p_plain_pwd)`
+* `sp_create_user(p_u_ser_name, p_plain_pwd)`
+* `sp_check_u_pwd(p_u_name, p_plain_pwd)`
 * `sp_get_project_details(p_requester_u_id, p_p_id)`
 * `sp_update_project(p_requester_u_id, p_p_id, p_name, p_description)`
 * `sp_delete_project(p_requester_u_id, p_p_id)`

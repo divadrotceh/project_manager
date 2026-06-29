@@ -81,7 +81,7 @@ def test_transaction(db_connection):
 def user1(db_connection):
     """Create and return test user 1."""
     with test_transaction(db_connection) as cur:
-        cur.execute("SELECT sp_create_user(%s, %s, %s)", (1, "testuser1", "password123"))
+        cur.execute("SELECT sp_create_user(%s, %s)", ("testuser1", "password123"))
         user_id = cur.fetchone()[0]
         yield user_id
 
@@ -90,7 +90,7 @@ def user1(db_connection):
 def user2(db_connection):
     """Create and return test user 2."""
     with test_transaction(db_connection) as cur:
-        cur.execute("SELECT sp_create_user(%s, %s, %s)", (1, "testuser2", "password456"))
+        cur.execute("SELECT sp_create_user(%s, %s)", ("testuser2", "password456"))
         user_id = cur.fetchone()[0]
         yield user_id
 
@@ -99,7 +99,7 @@ def user2(db_connection):
 def user3(db_connection):
     """Create and return test user 3."""
     with test_transaction(db_connection) as cur:
-        cur.execute("SELECT sp_create_user(%s, %s, %s)", (1, "testuser3", "password789"))
+        cur.execute("SELECT sp_create_user(%s, %s)", ("testuser3", "password789"))
         user_id = cur.fetchone()[0]
         yield user_id
 
@@ -142,7 +142,7 @@ class TestUserCreation:
     def test_create_user_success(self, db_connection):
         """Test successful user creation."""
         with test_transaction(db_connection) as cur:
-            cur.execute("SELECT sp_create_user(%s, %s, %s)", (1, "newuser", "pass123"))
+            cur.execute("SELECT sp_create_user(%s, %s)", ("newuser", "pass123"))
             result = cur.fetchone()
             assert result is not None
             user_id = result[0]
@@ -153,26 +153,26 @@ class TestUserCreation:
         """Test that duplicate username raises error."""
         with test_transaction(db_connection) as cur:
             with pytest.raises(psycopg.errors.UniqueViolation):
-                cur.execute("SELECT sp_create_user(%s, %s, %s)", (1, "testuser1", "different"))
+                cur.execute("SELECT sp_create_user(%s, %s)", ("testuser1", "different"))
 
     def test_check_password_correct(self, db_connection, user1):
         """Test password check with correct password."""
         with test_transaction(db_connection) as cur:
-            cur.execute("SELECT sp_check_u_pwd(%s, %s)", (user1, "password123"))
+            cur.execute("SELECT sp_check_u_pwd(%s, %s)", ("testuser1", "password123"))
             result = cur.fetchone()[0]
             assert result is True
 
     def test_check_password_incorrect(self, db_connection, user1):
         """Test password check with incorrect password."""
         with test_transaction(db_connection) as cur:
-            cur.execute("SELECT sp_check_u_pwd(%s, %s)", (user1, "wrongpassword"))
+            cur.execute("SELECT sp_check_u_pwd(%s, %s)", ("testuser1", "wrongpassword"))
             result = cur.fetchone()[0]
             assert result is False
 
     def test_check_password_nonexistent_user(self, db_connection):
         """Test password check for non-existent user."""
         with test_transaction(db_connection) as cur:
-            cur.execute("SELECT sp_check_u_pwd(%s, %s)", (99999, "anypass"))
+            cur.execute("SELECT sp_check_u_pwd(%s, %s)", ("99999", "anypass"))
             result = cur.fetchone()[0]
             assert result is False
 

@@ -211,7 +211,6 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION sp_create_user(
-    p_requester_u_id BIGINT,
     p_u_name TEXT,
     p_plain_pwd TEXT
 )
@@ -230,7 +229,7 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION sp_check_u_pwd(
-    p_u_id BIGINT,
+    p_u_name TEXT,
     p_plain_pwd TEXT
 )
 RETURNS BOOLEAN
@@ -239,7 +238,7 @@ AS $$
     SELECT EXISTS (
         SELECT 1
           FROM app_user u
-         WHERE u.u_id = p_u_id
+         WHERE u.u_name = p_u_name
            AND u.u_pwd = crypt(p_plain_pwd, u.u_pwd)
     );
 $$;
