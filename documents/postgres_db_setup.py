@@ -266,7 +266,7 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION sp_check_u_pwd(
-    p_u_id BIGINT,
+    p_u_username TEXT,
     p_plain_pwd TEXT
 )
 RETURNS BOOLEAN
@@ -275,7 +275,7 @@ AS $$
     SELECT EXISTS (
         SELECT 1
           FROM app_user u
-         WHERE u.u_id = p_u_id
+         WHERE u.u_ser_name = p_u_username
            AND u.u_pwd = crypt(p_plain_pwd, u.u_pwd)
     );
 $$;

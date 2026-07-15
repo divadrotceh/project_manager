@@ -54,6 +54,14 @@ def check_user_password(conn, username, password):
         return result[0] if result else False
 
 
+def get_user_id_by_username(conn, username):
+    """Retrieve the user ID based on the provided username."""
+    with conn.cursor() as cur:
+        cur.execute("SELECT u_id FROM app_user WHERE u_ser_name = %s", (username,))
+        result = cur.fetchone()
+        return result[0] if result else None
+
+
 def get_project_details(conn, requester_user_id, project_id):
     """Retrieve details of a specific project."""
     with conn.cursor() as cur:
